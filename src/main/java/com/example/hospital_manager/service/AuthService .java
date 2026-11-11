@@ -6,12 +6,16 @@ import com.example.hospital_manager.exception.ApiException;
 import com.example.hospital_manager.model.*;
 import com.example.hospital_manager.repository.UserRepository;
 import com.example.hospital_manager.security.JwtService;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.http.HttpStatus;
-import org.springframework.security.authentication.*;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
 import java.util.List;
 
 @Service
@@ -27,10 +31,13 @@ public class AuthService {
 
         if (userRepository.existsByUsername(request.username())) {
             throw new ApiException(
-                    HttpStatus.CONFLICT, "Username already exists");
+                    HttpStatus.CONFLICT,
+                    "Username already exists"
+            );
         }
 
         AppUser user = new AppUser();
+
         user.setUsername(request.username());
         user.setPassword(passwordEncoder.encode(request.password()));
         user.setFullName(request.fullName());
@@ -53,16 +60,18 @@ public class AuthService {
 
         AppUser user = userRepository.findByUsername(request.username())
                 .orElseThrow(() -> new ApiException(
-                        HttpStatus.UNAUTHORIZED, "Invalid credentials"));
+                        HttpStatus.UNAUTHORIZED,
+                        "Invalid credentials"
+                ));
 
-        UserDetails details =
+        UserDetails userDetails =
                 org.springframework.security.core.userdetails.User
                         .withUsername(user.getUsername())
                         .password(user.getPassword())
                         .authorities("ROLE_" + user.getRole().name())
                         .build();
 
-        String token = jwtService.generateToken(details);
+        String token = jwtService.generateToken(userDetails);
 
         return new AuthResponse(
                 token,
@@ -76,12 +85,15 @@ public class AuthService {
 
         AppUser user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ApiException(
-                        HttpStatus.NOT_FOUND, "User not found"));
+                        HttpStatus.NOT_FOUND,
+                        "User not found"
+                ));
 
         return toResponse(user);
     }
 
     public List<UserResponse> getDoctors() {
+
         return userRepository.findByRole(Role.DOCTOR)
                 .stream()
                 .map(this::toResponse)
@@ -89,6 +101,7 @@ public class AuthService {
     }
 
     public List<UserResponse> getUsers() {
+
         return userRepository.findAll()
                 .stream()
                 .map(this::toResponse)
@@ -96,6 +109,7 @@ public class AuthService {
     }
 
     private UserResponse toResponse(AppUser user) {
+
         return new UserResponse(
                 user.getId(),
                 user.getUsername(),
