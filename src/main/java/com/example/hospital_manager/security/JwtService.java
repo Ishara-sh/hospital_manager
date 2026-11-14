@@ -4,6 +4,7 @@ package com.example.hospital_manager.security;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -27,8 +28,19 @@ public class JwtService {
     }
 
     public String generateToken(UserDetails user) {
+
+        String role = user.getAuthorities()
+                .stream()
+                .map(GrantedAuthority::getAuthority)
+                .filter(authority -> authority.startsWith("ROLE_"))
+                .map(authority -> authority.substring(5))
+                .findFirst()
+                .orElseThrow(() ->
+                        new IllegalArgumentException("User role not found"));
+
         return Jwts.builder()
                 .setSubject(user.getUsername())
+                .claim("role", role)
                 .setIssuedAt(new Date())
                 .setExpiration(
                         new Date(System.currentTimeMillis() + expiration)
@@ -53,6 +65,7 @@ public class JwtService {
             return extractUsername(token).equals(
                     userDetails.getUsername()
             ) && !isTokenExpired(token);
+
         } catch (JwtException | IllegalArgumentException ex) {
             return false;
         }

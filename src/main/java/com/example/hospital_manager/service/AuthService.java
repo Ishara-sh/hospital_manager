@@ -49,6 +49,20 @@ public class AuthService {
         return toResponse(user);
     }
 
+    public UserResponse registerStaff(RegisterRequest request) {
+
+    if (request.role() == Role.ADMIN ||
+            request.role() == Role.PATIENT) {
+
+        throw new ApiException(
+                HttpStatus.BAD_REQUEST,
+                "Only staff roles can be created here"
+        );
+    }
+
+    return register(request);
+}
+
     public AuthResponse login(LoginRequest request) {
 
         authenticationManager.authenticate(

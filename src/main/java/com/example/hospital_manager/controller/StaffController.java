@@ -1,14 +1,19 @@
 
-
 package com.example.hospital_manager.controller;
 
+import com.example.hospital_manager.dto.RegisterRequest;
 import com.example.hospital_manager.dto.UserResponse;
-import com.example.hospital_manager.model.*;
+import com.example.hospital_manager.model.Role;
 import com.example.hospital_manager.service.AuthService;
-import com.example.hospital_manager.repository.UserRepository;
+
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+
 import java.util.List;
 
 @RestController
@@ -17,12 +22,19 @@ import java.util.List;
 public class StaffController {
 
     private final AuthService authService;
-    private final UserRepository userRepository;
 
     @GetMapping("/users")
     @PreAuthorize("hasRole('ADMIN')")
     public List<UserResponse> getUsers() {
         return authService.getUsers();
+    }
+
+    @PostMapping("/users")
+    @PreAuthorize("hasRole('ADMIN')")
+    public UserResponse addStaff(
+            @Valid @RequestBody RegisterRequest request) {
+
+        return authService.registerStaff(request);
     }
 
     @GetMapping("/doctors")
@@ -33,19 +45,17 @@ public class StaffController {
 
     @PostMapping("/admin/doctors")
     @PreAuthorize("hasRole('ADMIN')")
-    public UserResponse addDoctor(@RequestBody AppUser doctor) {
+    public UserResponse addDoctor(
+            @Valid @RequestBody RegisterRequest request) {
 
-        doctor.setId(null);
-        doctor.setRole(Role.DOCTOR);
+        RegisterRequest doctorRequest = new RegisterRequest(
+                request.username(),
+                request.password(),
+                request.fullName(),
+                request.email(),
+                Role.DOCTOR
+        );
 
-        if (userRepository.existsByUsername(doctor.getUsername())) {
-            throw new com.example.hospitalmanager.exception.ApiException(
-                    org.springframework.http.HttpStatus.CONFLICT,
-                    "Username already exists");
-        }
-
-        throw new com.example.hospitalmanager.exception.ApiException(
-                org.springframework.http.HttpStatus.BAD_REQUEST,
-                "Create doctor accounts through the registration endpoint");
+        return authService.registerStaff(doctorRequest);
     }
 }
